@@ -103,16 +103,22 @@
     Object.assign(el.style, base);
     document.documentElement.appendChild(el);
 
+    let reappearTimer = null;
+
     function showAndArm() {
+      clearTimeout(reappearTimer);
       el.style.display = '';
       el.style.transition = '';
       el.style.opacity = opacity;
       el.style.animation = 'sfq-fadein 0.8s ease-out, sfq-pulse 4s ease-in-out 1s infinite';
       const hide = () => {
+        document.removeEventListener('click', hide);
+        document.removeEventListener('keydown', hide);
         el.style.animation = 'none';
         el.style.transition = 'opacity 0.5s ease-out';
         el.style.opacity = '0';
         setTimeout(() => { el.style.display = 'none'; }, 500);
+        reappearTimer = setTimeout(showAndArm, 30000);
       };
       document.addEventListener('click', hide, { once: true });
       document.addEventListener('keydown', hide, { once: true });
