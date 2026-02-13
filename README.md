@@ -1,6 +1,6 @@
 # Salesforce Quick Navigator
 
-A Chrome Extension (Manifest V3) that provides environment identification watermarks and quick navigation for Salesforce orgs.
+A browser extension (Manifest V3) for Chrome and Firefox that provides environment identification watermarks and quick navigation for Salesforce orgs.
 
 ## Features
 
@@ -20,7 +20,7 @@ Customizable via the options page:
 
 ### Omnibox Quick Navigation
 
-Type **`sf`** in the Chrome address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox name to target a sandbox.
+Type **`sf`** in the browser address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox name to target a sandbox.
 
 ```
 sf <target>                    # goes to production (current tab)
@@ -73,10 +73,18 @@ sf dev users             → Custom target "users" in dev sandbox
 
 ## Installation
 
+### Chrome
 1. Clone or download this repository
 2. Open `chrome://extensions/` in Chrome
 3. Enable **Developer Mode** (toggle in the top right)
 4. Click **Load unpacked** and select this directory
+5. Open the extension's **Options** page to configure your production URL
+
+### Firefox
+1. Clone or download this repository
+2. Open `about:debugging#/runtime/this-firefox` in Firefox
+3. Click **Load Temporary Add-on**
+4. Select the `manifest.json` file from this directory
 5. Open the extension's **Options** page to configure your production URL
 
 ## Configuration
@@ -87,7 +95,7 @@ Open the extension options page to set:
 2. **Watermark settings** — Toggle, font size, opacity, colors, and position.
 3. **Custom Targets** — Up to 10 custom name/URL pairs. Paste a full Salesforce URL and the path is extracted automatically. Target names support flexible plural matching (`site` matches `sites` and vice versa).
 
-All settings sync across Chrome instances via `chrome.storage.sync`.
+All settings sync across browser instances via `chrome.storage.sync`.
 
 ## How Environment Detection Works
 
@@ -114,6 +122,8 @@ Supported domains:
 
 ## Development
 
-No build tools required — vanilla JS, HTML, and CSS loaded directly by Chrome.
+No build tools required — vanilla JS, HTML, and CSS loaded directly by the browser.
 
-After making changes, go to `chrome://extensions/` and click the reload button on the extension card.
+After making changes:
+- **Chrome**: Go to `chrome://extensions/` and click the reload button on the extension card
+- **Firefox**: Go to `about:debugging#/runtime/this-firefox` and click **Reload**
