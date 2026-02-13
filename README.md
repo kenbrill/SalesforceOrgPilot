@@ -20,15 +20,16 @@ Customizable via the options page:
 
 ### Omnibox Quick Navigation
 
-Type **`sf`** in the Chrome address bar followed by an environment and target to quickly navigate anywhere in your Salesforce org.
+Type **`sf`** in the Chrome address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox name to target a sandbox.
 
 ```
-sf <environment> <target>
+sf <target>                    # goes to production
+sf <sandbox> <target>          # goes to a sandbox
 ```
 
 **Environments:**
-- `prod` — Production org
-- Any other value — Sandbox with that name (e.g., `dev`, `qa`, `staging`)
+- Single word defaults to **production** (e.g., `sf cases` → prod cases)
+- Two words: first word is the sandbox name (e.g., `sf dev cases` → dev sandbox cases)
 
 **Targets:**
 
@@ -43,10 +44,13 @@ sf <environment> <target>
 
 **Examples:**
 ```
-sf prod account       → Production Account list
+sf account            → Production Account list
+sf flow               → Production Flow Builder
+sf admin              → Production Setup Home
+sf 001xx000003DGbY    → Navigate directly to a production record
 sf dev flow           → Dev sandbox Flow Builder
 sf qa admin           → QA sandbox Setup Home
-sf prod 001xx000003DGbY  → Navigate directly to a record
+sf dev 001xx000003DGbY   → Navigate to a record in dev sandbox
 ```
 
 ## Installation

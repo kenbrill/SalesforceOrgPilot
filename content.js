@@ -35,6 +35,19 @@
   const position = config.position || 'diagonal';
 
   function injectWatermark() {
+    // Inject keyframe animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes sfq-fadein {
+        from { opacity: 0; }
+      }
+      @keyframes sfq-pulse {
+        0%, 100% { opacity: ${opacity}; }
+        50% { opacity: ${opacity * 0.6}; }
+      }
+    `;
+    document.documentElement.appendChild(style);
+
     const el = document.createElement('div');
     el.id = 'sfq-watermark';
     el.textContent = label;
@@ -49,7 +62,9 @@
       color: color,
       opacity: opacity,
       userSelect: 'none',
-      lineHeight: '1'
+      lineHeight: '1',
+      textShadow: `0 0 10px ${color}, 0 0 30px ${color}`,
+      animation: 'sfq-fadein 0.8s ease-out, sfq-pulse 4s ease-in-out 1s infinite'
     };
 
     if (position === 'diagonal') {
@@ -90,7 +105,15 @@
 
     function showAndArm() {
       el.style.display = '';
-      const hide = () => { el.style.display = 'none'; };
+      el.style.transition = '';
+      el.style.opacity = opacity;
+      el.style.animation = 'sfq-fadein 0.8s ease-out, sfq-pulse 4s ease-in-out 1s infinite';
+      const hide = () => {
+        el.style.animation = 'none';
+        el.style.transition = 'opacity 0.5s ease-out';
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.display = 'none'; }, 500);
+      };
       document.addEventListener('click', hide, { once: true });
       document.addEventListener('keydown', hide, { once: true });
     }

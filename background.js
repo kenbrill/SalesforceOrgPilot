@@ -1,12 +1,10 @@
 chrome.omnibox.onInputEntered.addListener(async (text) => {
   const parts = text.trim().split(/\s+/);
   
-  // If a single Salesforce ID is provided, assume production
-  if (parts.length === 1 && /^[a-zA-Z0-9]{15}$|^[a-zA-Z0-9]{18}$/.test(parts[0])) {
+  // If a single word is provided, assume production
+  if (parts.length === 1) {
     parts.unshift('prod');
   }
-
-  if (parts.length < 2) return;
 
   const firstParam = parts[0].toLowerCase();
   const secondParam = parts[1];

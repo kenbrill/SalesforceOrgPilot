@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Salesforce Quick Navigator",
-  "version": "1.29",
+  "version": "1.31",
   "omnibox": {
     "keyword": "sf"
   },
