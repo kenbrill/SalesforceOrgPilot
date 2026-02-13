@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 450px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .section {
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .section:last-child {
+      border-bottom: none;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 16px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="range"],
+    select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    input[type="range"] {
+      padding: 0;
+    }
+    .range-value {
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: bold;
+      color: #0070d2;
+    }
+    button {
+      background-color: #0070d2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #005a9c;
+    }
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+      font-size: 14px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    small {
+      display: block;
+      color: #666;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+    .color-picker-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .color-input {
+      width: 60px;
+      height: 40px;
+      padding: 2px;
+      cursor: pointer;
+    }
+    .label-inline {
+      margin-bottom: 0;
+      font-weight: normal;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="font-size: 20px; margin-top: 0;">Salesforce Navigator</h1>
+  
+  <div class="section">
+    <h2>Production URL</h2>
+    <div class="form-group">
+      <label for="prodUrl">Salesforce Org Domain:</label>
+      <input 
+        type="text" 
+        id="prodUrl" 
+        placeholder="sangoma.lightning.force.com"
+      >
+      <small>Enter your production domain</small>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Watermark Settings</h2>
+    <div class="form-group">
+      <label for="watermarkEnabled">
+        <input type="checkbox" id="watermarkEnabled"> Enable Watermark
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label for="fontSize">Font Size: <span class="range-value" id="fontSizeValue">120</span>px</label>
+      <input 
+        type="range" 
+        id="fontSize" 
+        min="50" 
+        max="300" 
+        value="120"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="opacity">Opacity: <span class="range-value" id="opacityValue">20</span>%</label>
+      <input 
+        type="range" 
+        id="opacity" 
+        min="5" 
+        max="50" 
+        value="20"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="prodColor">Production Color:</label>
+      <div class="color-picker-row">
+        <input type="color" id="prodColor" class="color-input" value="#ff4444">
+        <span class="label-inline" id="prodColorValue">#ff4444</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="sandboxColor">Sandbox Color:</label>
+      <div class="color-picker-row">
+        <input type="color" id="sandboxColor" class="color-input" value="#006600">
+        <span class="label-inline" id="sandboxColorValue">#006600</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="position">Position:</label>
+      <select id="position">
+        <option value="diagonal">Diagonal</option>
+        <option value="top-left">Top Left Corner</option>
+        <option value="top-right">Top Right Corner</option>
+        <option value="top-center">Top Center</option>
+        <option value="center">Center</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="saveBtn">Save Configuration</button>
+  
+  <div id="message" class="message"></div>
+</body>
+
+<script src="options.js"></script>
+</html>
