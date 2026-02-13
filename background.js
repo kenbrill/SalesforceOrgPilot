@@ -6,7 +6,10 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
     parts.unshift('prod');
   }
 
-  const firstParam = parts[0].toLowerCase();
+  // Leading ** = new window, * = new tab, default = current tab
+  const openInNewWindow = parts[0].startsWith('**');
+  const openInNewTab = !openInNewWindow && parts[0].startsWith('*');
+  const firstParam = parts[0].replace(/^\*{1,2}/, '').toLowerCase();
   const secondParam = parts[1];
   const secondParamLower = secondParam.toLowerCase();
 
@@ -108,5 +111,12 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
     url = `${baseUrl}/lightning/o/${objectName}/list?filterName=__Recent`;
   }
   
-  chrome.tabs.create({ url });
+  if (openInNewWindow) {
+    chrome.windows.create({ url });
+  } else if (openInNewTab) {
+    chrome.tabs.create({ url });
+  } else {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.tabs.update(tab.id, { url });
+  }
 });
