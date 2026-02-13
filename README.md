@@ -37,6 +37,7 @@ sf <sandbox> <target>          # goes to a sandbox
 |---|---|
 | `admin` | Setup Home |
 | `flow` / `flows` | Flow Builder |
+| `login` | Base URL / login page for the org |
 | `copy` | Current page in another environment |
 | `sandbox` | Sandbox creation page |
 | `devops` | DevOps Center (production only) |
@@ -49,6 +50,8 @@ sf account            → Production Account list
 sf flow               → Production Flow Builder
 sf admin              → Production Setup Home
 sf 001xx000003DGbY    → Navigate directly to a production record
+sf login              → Production base URL
+sf dev login          → Dev sandbox base URL
 sf dive copy          → Open current page in dive sandbox
 sf copy               → Open current page in production
 sf dev flow           → Dev sandbox Flow Builder

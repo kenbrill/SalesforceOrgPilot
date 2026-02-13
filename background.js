@@ -11,7 +11,7 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
   const secondParamLower = secondParam.toLowerCase();
 
   // Get stored configuration
-  const data = await chrome.storage.sync.get(['prodUrl', 'orgName']);
+  const data = await chrome.storage.sync.get(['prodUrl', 'orgName', 'customTargets']);
   
   if (!data.orgName) {
     chrome.tabs.create({
@@ -32,7 +32,13 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
   }
   
   let url;
-  
+
+  // Pre-compute custom target match (flexible plural: "site" matches "sites" and vice versa)
+  const customAltName = secondParamLower.endsWith('s') ? secondParamLower.slice(0, -1) : secondParamLower + 's';
+  const customMatch = data.customTargets
+    ? data.customTargets.find(t => t.name === secondParamLower || t.name === customAltName)
+    : null;
+
   // Copy current page to another environment
   if (secondParamLower === 'copy') {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -72,13 +78,21 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
   else if (secondParamLower === 'devops') {
     url = `https://${orgName}.lightning.force.com/sf_devops/DevOpsCenter.app`;
   }
+  // Check if login
+  else if (secondParamLower === 'login') {
+    url = baseUrl;
+  }
   // Check if admin
   else if (secondParamLower === 'admin') {
     url = `${baseUrl}/lightning/setup/SetupOneHome/home`;
   }
   // Check if flow
-  else if (secondParamLower === 'flow' || secondParamLower === 'flows') {
+  else if (secondParamLower.substring(0, 4) === 'flow') {
     url = `${baseUrl}/lightning/setup/Flows/home`;
+  }
+  // Check custom targets (flexible plural matching: "site" matches "sites" and vice versa)
+  else if (customMatch) {
+    url = baseUrl + customMatch.path;
   }
   // Check if it's a Salesforce ID (18 or 15 character alphanumeric)
   else if (/^[a-zA-Z0-9]{15}$|^[a-zA-Z0-9]{18}$/.test(secondParam)) {

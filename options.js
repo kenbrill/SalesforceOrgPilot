@@ -1,14 +1,41 @@
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const prodUrl = document.getElementById('prodUrl').value.trim();
-  
+
   if (!prodUrl) {
     showMessage('Please enter a production URL', false);
     return;
   }
-  
+
   // Extract the organization name from the URL
   const orgName = prodUrl.split('.')[0];
-  
+
+  // Collect custom targets
+  const customTargets = [];
+  const rows = document.querySelectorAll('#customTargets .target-row');
+  for (const row of rows) {
+    const name = row.querySelector('.target-name').value.trim().toLowerCase();
+    let path = row.querySelector('.target-path').value.trim();
+    if (!name || !path) continue;
+    if (/\s/.test(name)) {
+      showMessage(`Target name "${name}" cannot contain spaces`, false);
+      return;
+    }
+    // Extract pathname if a full URL was pasted
+    if (path.startsWith('http')) {
+      try {
+        path = new URL(path).pathname;
+      } catch (e) {
+        showMessage(`Invalid URL for target "${name}"`, false);
+        return;
+      }
+    }
+    // Ensure path starts with /
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+    customTargets.push({ name, path });
+  }
+
   const config = {
     prodUrl,
     orgName,
@@ -17,9 +44,10 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     opacity: parseInt(document.getElementById('opacity').value),
     prodColor: document.getElementById('prodColor').value,
     sandboxColor: document.getElementById('sandboxColor').value,
-    position: document.getElementById('position').value
+    position: document.getElementById('position').value,
+    customTargets
   };
-  
+
   await chrome.storage.sync.set(config);
   showMessage('Configuration saved!', true);
 });
@@ -41,6 +69,33 @@ document.getElementById('sandboxColor').addEventListener('input', (e) => {
   document.getElementById('sandboxColorValue').textContent = e.target.value;
 });
 
+// Custom targets management
+function addTargetRow(name = '', path = '') {
+  const container = document.getElementById('customTargets');
+  const row = document.createElement('div');
+  row.className = 'target-row';
+  row.innerHTML = `
+    <input type="text" class="target-name" placeholder="name" value="${name}">
+    <input type="text" class="target-path" placeholder="/lightning/setup/..." value="${path}">
+    <button type="button" class="remove-target">X</button>
+  `;
+  row.querySelector('.remove-target').addEventListener('click', () => {
+    row.remove();
+    updateAddButton();
+  });
+  container.appendChild(row);
+  updateAddButton();
+}
+
+function updateAddButton() {
+  const count = document.querySelectorAll('#customTargets .target-row').length;
+  document.getElementById('addTargetBtn').disabled = count >= 10;
+}
+
+document.getElementById('addTargetBtn').addEventListener('click', () => {
+  addTargetRow();
+});
+
 // Load existing configuration
 async function loadConfig() {
   const data = await chrome.storage.sync.get([
@@ -50,9 +105,10 @@ async function loadConfig() {
     'opacity',
     'prodColor',
     'sandboxColor',
-    'position'
+    'position',
+    'customTargets'
   ]);
-  
+
   if (data.prodUrl) {
     document.getElementById('prodUrl').value = data.prodUrl;
   }
@@ -77,6 +133,11 @@ async function loadConfig() {
   }
   if (data.position) {
     document.getElementById('position').value = data.position;
+  }
+  if (data.customTargets && data.customTargets.length) {
+    for (const target of data.customTargets) {
+      addTargetRow(target.name, target.path);
+    }
   }
 }
 
