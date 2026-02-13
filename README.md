@@ -23,13 +23,20 @@ Customizable via the options page:
 Type **`sf`** in the Chrome address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox name to target a sandbox.
 
 ```
-sf <target>                    # goes to production
-sf <sandbox> <target>          # goes to a sandbox
+sf <target>                    # goes to production (current tab)
+sf <sandbox> <target>          # goes to a sandbox (current tab)
+sf *<sandbox> <target>         # opens in a new tab
+sf **<sandbox> <target>        # opens in a new window
 ```
 
 **Environments:**
 - Single word defaults to **production** (e.g., `sf cases` → prod cases)
 - Two words: first word is the sandbox name (e.g., `sf dev cases` → dev sandbox cases)
+
+**Tab/Window behavior:**
+- No prefix — navigates in the **current tab** (default)
+- `*` prefix — opens in a **new tab** (e.g., `sf *dev cases`)
+- `**` prefix — opens in a **new window** (e.g., `sf **dev cases`)
 
 **Targets:**
 
@@ -41,6 +48,7 @@ sf <sandbox> <target>          # goes to a sandbox
 | `copy` | Current page in another environment |
 | `sandbox` | Sandbox creation page |
 | `devops` | DevOps Center (production only) |
+| Custom target name | User-defined path (see Custom Targets) |
 | Any object name (e.g., `account`, `contact`) | Recent list view for that object |
 | 15 or 18-character Salesforce ID | Direct record navigation |
 
@@ -57,6 +65,10 @@ sf copy               → Open current page in production
 sf dev flow           → Dev sandbox Flow Builder
 sf qa admin           → QA sandbox Setup Home
 sf dev 001xx000003DGbY   → Navigate to a record in dev sandbox
+sf *prod admin           → Production Setup Home in a new tab
+sf **dev cases           → Dev sandbox cases in a new window
+sf users                 → Custom target "users" in production
+sf dev users             → Custom target "users" in dev sandbox
 ```
 
 ## Installation
@@ -73,6 +85,7 @@ Open the extension options page to set:
 
 1. **Production URL** — Your Salesforce production domain (e.g., `myorg.lightning.force.com`). The org name is extracted from the first segment of this URL and used for environment detection and navigation.
 2. **Watermark settings** — Toggle, font size, opacity, colors, and position.
+3. **Custom Targets** — Up to 10 custom name/URL pairs. Paste a full Salesforce URL and the path is extracted automatically. Target names support flexible plural matching (`site` matches `sites` and vice versa).
 
 All settings sync across Chrome instances via `chrome.storage.sync`.
 
