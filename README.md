@@ -37,6 +37,7 @@ sf <sandbox> <target>          # goes to a sandbox
 |---|---|
 | `admin` | Setup Home |
 | `flow` / `flows` | Flow Builder |
+| `copy` | Current page in another environment |
 | `sandbox` | Sandbox creation page |
 | `devops` | DevOps Center (production only) |
 | Any object name (e.g., `account`, `contact`) | Recent list view for that object |
@@ -48,6 +49,8 @@ sf account            → Production Account list
 sf flow               → Production Flow Builder
 sf admin              → Production Setup Home
 sf 001xx000003DGbY    → Navigate directly to a production record
+sf dive copy          → Open current page in dive sandbox
+sf copy               → Open current page in production
 sf dev flow           → Dev sandbox Flow Builder
 sf qa admin           → QA sandbox Setup Home
 sf dev 001xx000003DGbY   → Navigate to a record in dev sandbox

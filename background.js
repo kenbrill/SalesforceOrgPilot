@@ -33,8 +33,39 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
   
   let url;
   
+  // Copy current page to another environment
+  if (secondParamLower === 'copy') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.url) return;
+
+    const currentUrl = new URL(tab.url);
+    const currentHost = currentUrl.hostname;
+
+    // Strip org prefix to get the domain tail (e.g. "my.salesforce-setup.com")
+    let tail;
+    if (currentHost.startsWith(orgName + '--')) {
+      // Sandbox: strip "orgName--sbxName." then strip "sandbox."
+      tail = currentHost.replace(/^[^.]+\./, '');
+      if (tail.startsWith('sandbox.')) tail = tail.slice('sandbox.'.length);
+    } else if (currentHost.startsWith(orgName + '.')) {
+      // Prod: strip "orgName."
+      tail = currentHost.replace(/^[^.]+\./, '');
+    } else {
+      return;
+    }
+
+    // Build new hostname for target environment
+    let newHost;
+    if (firstParam === 'prod') {
+      newHost = `${orgName}.${tail}`;
+    } else {
+      newHost = `${orgName}--${firstParam}.sandbox.${tail}`;
+    }
+
+    url = `https://${newHost}${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+  }
   // Check if sandbox (always goes to prod)
-  if (secondParamLower === 'sandbox') {
+  else if (secondParamLower === 'sandbox') {
     url = `https://${orgName}.my.salesforce-setup.com/lightning/setup/DataManagementCreateTestInstance/home`;
   }
   // Check if devops (only available in prod)
