@@ -1,101 +1,250 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap">
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      width: 450px;
-      padding: 20px;
-      font-family: Arial, sans-serif;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0b12;
+      color: #d4d7e1;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 20px;
     }
-    .section {
-      margin-bottom: 25px;
+
+    .wrapper {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* Header */
+    .page-header {
+      margin-bottom: 28px;
       padding-bottom: 20px;
-      border-bottom: 1px solid #e0e0e0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .section:last-child {
-      border-bottom: none;
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f0f1f5;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
+    .page-header h1::before {
+      content: '';
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+    .page-header p {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #555b75;
+      padding-left: 20px;
+    }
+
+    /* Sections */
+    .section {
+      background: #12131e;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
     h2 {
-      margin-top: 0;
-      font-size: 16px;
-      color: #333;
+      font-size: 14px;
+      font-weight: 600;
+      color: #e4e6ec;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
     }
+    h2 .badge {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+    }
+
+    /* Form elements */
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 16px;
     }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
     label {
       display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      font-size: 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 13px;
+      color: #b0b6c9;
     }
-    input[type="text"],
-    input[type="number"],
-    input[type="range"],
-    select {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    input[type="range"] {
-      padding: 0;
-    }
-    .range-value {
-      display: inline-block;
-      margin-left: 10px;
-      font-weight: bold;
-      color: #0070d2;
-    }
-    button {
-      background-color: #0070d2;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 14px;
-    }
-    button:hover {
-      background-color: #005a9c;
-    }
-    .message {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 4px;
-      display: none;
-      font-size: 14px;
-    }
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-      display: block;
-    }
+
     small {
       display: block;
-      color: #666;
-      font-size: 12px;
-      margin-top: 3px;
+      color: #4a506a;
+      font-size: 11px;
+      margin-top: 4px;
+      line-height: 1.5;
     }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0f1019;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #d4d7e1;
+      transition: all 0.15s ease;
+    }
+    input[type="text"]::placeholder {
+      color: #3d4259;
+    }
+    input[type="text"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    select {
+      cursor: pointer;
+    }
+    select option {
+      background: #12131e;
+      color: #d4d7e1;
+    }
+
+    /* Checkbox */
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .checkbox-label input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1px solid #363b54;
+      border-radius: 4px;
+      background: #0f1019;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .checkbox-label input[type="checkbox"]:checked {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+    .checkbox-label input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 9px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* Range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #1a1d2d;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 1px 6px rgba(59, 130, 246, 0.35);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 1px 10px rgba(59, 130, 246, 0.5);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 1px 6px rgba(59, 130, 246, 0.35);
+    }
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      background: #1a1d2d;
+      border-radius: 3px;
+    }
+
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .range-value {
+      font-weight: 700;
+      color: #3b82f6;
+      font-size: 13px;
+    }
+
+    /* Color picker */
     .color-picker-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
     }
     .color-input {
-      width: 60px;
-      height: 40px;
+      width: 44px;
+      height: 32px;
       padding: 2px;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      background: #0f1019;
       cursor: pointer;
     }
-    .label-inline {
-      margin-bottom: 0;
-      font-weight: normal;
-      flex: 1;
+    .color-hex {
+      font-size: 13px;
+      color: #6b7394;
+      font-family: 'Outfit', monospace;
+      font-weight: 500;
     }
+
+    /* Custom targets */
     .target-row {
       display: flex;
       gap: 8px;
@@ -103,7 +252,7 @@
       margin-bottom: 8px;
     }
     .target-row input.target-name {
-      width: 120px;
+      width: 110px;
       flex-shrink: 0;
     }
     .target-row input.target-path {
@@ -111,101 +260,279 @@
     }
     .target-row .remove-target {
       width: auto;
-      padding: 6px 10px;
-      background-color: #d9534f;
-      font-size: 13px;
+      padding: 8px 12px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
       flex-shrink: 0;
+      transition: all 0.15s ease;
     }
     .target-row .remove-target:hover {
-      background-color: #c9302c;
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    /* Buttons */
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #181b28;
+      color: #b0b6c9;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-sm:hover {
+      background: #1f2338;
+      border-color: #3b82f6;
+      color: #e4e6ec;
+    }
+
+    .btn-export {
+      background: rgba(59, 130, 246, 0.1);
+      color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+    .btn-export:hover {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-import {
+      background: rgba(34, 197, 94, 0.1);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.2);
+    }
+    .btn-import:hover {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-add {
+      margin-top: 10px;
+    }
+
+    /* Save button */
+    #saveBtn {
+      width: 100%;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: -0.2px;
+    }
+    #saveBtn:hover {
+      background: linear-gradient(135deg, #4f91ff, #3b82f6);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+      transform: translateY(-1px);
+    }
+    #saveBtn:active {
+      transform: translateY(0);
+    }
+
+    /* Messages */
+    .message {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      display: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.15);
+      display: block;
+    }
+
+    /* Keyboard shortcut display */
+    .kbd {
+      display: inline-block;
+      background: #0f1019;
+      border: 1px solid #252940;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #8890a6;
+      font-weight: 600;
+    }
+    .shortcut-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
-  <h1 style="font-size: 20px; margin-top: 0;">Salesforce Navigator</h1>
-  
-  <div class="section">
-    <h2>Production URL</h2>
-    <div class="form-group">
-      <label for="prodUrl">Salesforce Org Domain:</label>
-      <input 
-        type="text" 
-        id="prodUrl" 
-        placeholder="sangoma.lightning.force.com"
-      >
-      <small>Enter your production domain</small>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Watermark Settings</h2>
-    <div class="form-group">
-      <label for="watermarkEnabled">
-        <input type="checkbox" id="watermarkEnabled"> Enable Watermark
-      </label>
+  <div class="wrapper">
+    <div class="page-header">
+      <h1>Salesforce Navigator</h1>
+      <p>Configure your org, environments, and preferences</p>
     </div>
 
-    <div class="form-group">
-      <label for="fontSize">Font Size: <span class="range-value" id="fontSizeValue">120</span>px</label>
-      <input 
-        type="range" 
-        id="fontSize" 
-        min="50" 
-        max="300" 
-        value="120"
-      >
-    </div>
-
-    <div class="form-group">
-      <label for="opacity">Opacity: <span class="range-value" id="opacityValue">20</span>%</label>
-      <input 
-        type="range" 
-        id="opacity" 
-        min="5" 
-        max="50" 
-        value="20"
-      >
-    </div>
-
-    <div class="form-group">
-      <label for="prodColor">Production Color:</label>
-      <div class="color-picker-row">
-        <input type="color" id="prodColor" class="color-input" value="#ff4444">
-        <span class="label-inline" id="prodColorValue">#ff4444</span>
+    <div class="section">
+      <h2>Production URL</h2>
+      <div class="form-group">
+        <label for="prodUrl">Salesforce Org Domain</label>
+        <input
+          type="text"
+          id="prodUrl"
+          placeholder="myorg.lightning.force.com"
+        >
+        <small>Enter your production domain (e.g. myorg.lightning.force.com)</small>
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="sandboxColor">Sandbox Color:</label>
-      <div class="color-picker-row">
-        <input type="color" id="sandboxColor" class="color-input" value="#006600">
-        <span class="label-inline" id="sandboxColorValue">#006600</span>
+    <div class="section">
+      <h2>Sandbox Names</h2>
+      <div class="form-group">
+        <label for="sandboxNames">Sandbox Environments</label>
+        <input
+          type="text"
+          id="sandboxNames"
+          placeholder="dev, qa, uat"
+        >
+        <small>Comma-separated list of sandbox names. These appear as environment buttons in the popup.</small>
+        <button type="button" id="scanHistoryBtn" class="btn-sm" style="margin-top: 8px;">Scan Browser History</button>
+        <div id="scanMessage" class="message"></div>
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="position">Position:</label>
-      <select id="position">
-        <option value="diagonal">Diagonal</option>
-        <option value="top-left">Top Left Corner</option>
-        <option value="top-right">Top Right Corner</option>
-        <option value="top-center">Top Center</option>
-        <option value="center">Center</option>
-      </select>
+    <div class="section">
+      <h2>Tab Grouping</h2>
+      <div class="form-group">
+        <label class="checkbox-label" for="tabGroupingEnabled">
+          <input type="checkbox" id="tabGroupingEnabled">
+          Auto-group Salesforce tabs by environment
+        </label>
+        <small>Production tabs are grouped in red (PROD). Each sandbox gets its own color-coded group.</small>
+      </div>
+      <div class="shortcut-info">
+        <small style="margin: 0;">Press <span class="kbd">Alt+Shift+G</span> (<span class="kbd">Option+Shift+G</span> on Mac) to manually group all tabs (works even when auto is off)</small>
+      </div>
     </div>
+
+    <div class="section">
+      <h2>Watermark <span class="badge">Visual</span></h2>
+      <div class="form-group">
+        <label class="checkbox-label" for="watermarkEnabled">
+          <input type="checkbox" id="watermarkEnabled">
+          Enable Watermark
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="range-label" for="fontSize">
+          Font Size
+          <span class="range-value"><span id="fontSizeValue">120</span>px</span>
+        </label>
+        <input
+          type="range"
+          id="fontSize"
+          min="50"
+          max="300"
+          value="120"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="range-label" for="opacity">
+          Opacity
+          <span class="range-value"><span id="opacityValue">20</span>%</span>
+        </label>
+        <input
+          type="range"
+          id="opacity"
+          min="5"
+          max="50"
+          value="20"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Production Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="prodColor" class="color-input" value="#ff4444">
+          <span class="color-hex" id="prodColorValue">#ff4444</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Sandbox Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="sandboxColor" class="color-input" value="#006600">
+          <span class="color-hex" id="sandboxColorValue">#006600</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="position">Position</label>
+        <select id="position">
+          <option value="diagonal">Diagonal</option>
+          <option value="top-left">Top Left Corner</option>
+          <option value="top-right">Top Right Corner</option>
+          <option value="top-center">Top Center</option>
+          <option value="center">Center</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Custom Targets</h2>
+      <small style="margin-bottom: 12px;">Add up to 10 custom navigation targets. Enter a short name and a Salesforce URL path.</small>
+      <div id="customTargets"></div>
+      <button type="button" id="addTargetBtn" class="btn-sm btn-add">+ Add Target</button>
+    </div>
+
+    <div class="section">
+      <h2>Keyboard Shortcut</h2>
+      <div class="shortcut-info">
+        <small style="margin: 0;">Press <span class="kbd">Alt+S</span> to open the popup. Remap in browser settings.</small>
+        <button type="button" id="openShortcutsBtn" class="btn-sm">Change</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Export / Import</h2>
+      <small>Backup your settings as JSON, or restore from a previously exported file.</small>
+      <div class="button-row">
+        <button type="button" id="exportBtn" class="btn-sm btn-export">Export</button>
+        <button type="button" id="importBtn" class="btn-sm btn-import">Import</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display: none;">
+      <div id="importMessage" class="message"></div>
+    </div>
+
+    <button id="saveBtn">Save Configuration</button>
+    <div id="message" class="message"></div>
   </div>
 
-  <div class="section">
-    <h2>Custom Targets</h2>
-    <small style="margin-bottom: 10px;">Add up to 10 custom navigation targets. Enter a short name and a Salesforce URL (the path will be extracted automatically).</small>
-    <div id="customTargets"></div>
-    <button type="button" id="addTargetBtn" style="width: auto; margin-top: 10px; padding: 6px 14px; font-size: 13px;">+ Add Target</button>
-  </div>
-
-  <button id="saveBtn">Save Configuration</button>
-  
-  <div id="message" class="message"></div>
+  <script src="options.js"></script>
 </body>
-
-<script src="options.js"></script>
 </html>

@@ -36,6 +36,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     customTargets.push({ name, path });
   }
 
+  // Parse sandbox names from comma-separated input
+  const sandboxNamesRaw = document.getElementById('sandboxNames').value;
+  const sandboxNames = sandboxNamesRaw
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
   const config = {
     prodUrl,
     orgName,
@@ -45,7 +52,9 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     prodColor: document.getElementById('prodColor').value,
     sandboxColor: document.getElementById('sandboxColor').value,
     position: document.getElementById('position').value,
-    customTargets
+    customTargets,
+    sandboxNames,
+    tabGroupingEnabled: document.getElementById('tabGroupingEnabled').checked
   };
 
   await chrome.storage.sync.set(config);
@@ -106,7 +115,9 @@ async function loadConfig() {
     'prodColor',
     'sandboxColor',
     'position',
-    'customTargets'
+    'customTargets',
+    'sandboxNames',
+    'tabGroupingEnabled'
   ]);
 
   if (data.prodUrl) {
@@ -134,6 +145,12 @@ async function loadConfig() {
   if (data.position) {
     document.getElementById('position').value = data.position;
   }
+  if (data.sandboxNames && data.sandboxNames.length) {
+    document.getElementById('sandboxNames').value = data.sandboxNames.join(', ');
+  }
+  if (data.tabGroupingEnabled !== undefined) {
+    document.getElementById('tabGroupingEnabled').checked = data.tabGroupingEnabled;
+  }
   if (data.customTargets && data.customTargets.length) {
     for (const target of data.customTargets) {
       addTargetRow(target.name, target.path);
@@ -148,6 +165,114 @@ function showMessage(text, isSuccess) {
   setTimeout(() => {
     messageEl.className = 'message';
   }, 3000);
+}
+
+// --- Keyboard shortcut ---
+document.getElementById('openShortcutsBtn').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+});
+
+// --- Export / Import ---
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const data = await chrome.storage.sync.get(null);
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sfnav-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const config = JSON.parse(event.target.result);
+      if (typeof config !== 'object' || !config.prodUrl) {
+        showImportMessage('Invalid config file: missing prodUrl', false);
+        return;
+      }
+      await chrome.storage.sync.set(config);
+      showImportMessage('Settings imported! Reloading...', true);
+      setTimeout(() => location.reload(), 1000);
+    } catch {
+      showImportMessage('Invalid JSON file', false);
+    }
+  };
+  reader.readAsText(file);
+});
+
+function showImportMessage(text, isSuccess) {
+  const el = document.getElementById('importMessage');
+  el.textContent = text;
+  el.className = 'message' + (isSuccess ? ' success' : '');
+  if (!isSuccess) {
+    setTimeout(() => { el.className = 'message'; }, 3000);
+  }
+}
+
+// --- Scan browser history for sandbox names ---
+document.getElementById('scanHistoryBtn').addEventListener('click', async () => {
+  const prodUrl = document.getElementById('prodUrl').value.trim();
+  if (!prodUrl) {
+    showScanMessage('Please enter a production URL first', false);
+    return;
+  }
+
+  const orgName = prodUrl.split('.')[0];
+  const prefix = orgName + '--';
+
+  // Search history for Salesforce domains
+  const queries = [
+    chrome.history.search({ text: orgName + '.salesforce.com', maxResults: 10000, startTime: 0 }),
+    chrome.history.search({ text: orgName + '.lightning.force.com', maxResults: 10000, startTime: 0 }),
+    chrome.history.search({ text: orgName + '.salesforce-setup.com', maxResults: 10000, startTime: 0 })
+  ];
+
+  const results = (await Promise.all(queries)).flat();
+
+  const found = new Set();
+  for (const item of results) {
+    try {
+      const hostname = new URL(item.url).hostname;
+      if (hostname.startsWith(prefix)) {
+        const sandboxName = hostname.split('.')[0].split('--')[1];
+        if (sandboxName) found.add(sandboxName.toLowerCase());
+      }
+    } catch (e) {
+      // skip malformed URLs
+    }
+  }
+
+  if (found.size === 0) {
+    showScanMessage('No sandbox URLs found in browser history', false);
+    return;
+  }
+
+  // Merge with existing sandbox names
+  const existing = document.getElementById('sandboxNames').value
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(s => s.length > 0);
+
+  const merged = [...new Set([...existing, ...found])].sort();
+  document.getElementById('sandboxNames').value = merged.join(', ');
+  showScanMessage(`Found ${found.size} sandbox(es): ${[...found].sort().join(', ')}`, true);
+});
+
+function showScanMessage(text, isSuccess) {
+  const el = document.getElementById('scanMessage');
+  el.textContent = text;
+  el.className = 'message' + (isSuccess ? ' success' : '');
+  setTimeout(() => { el.className = 'message'; }, 5000);
 }
 
 loadConfig();

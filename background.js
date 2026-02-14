@@ -1,3 +1,110 @@
+// --- Recently visited Salesforce pages ---
+const SF_DOMAINS = /\.(salesforce\.com|lightning\.force\.com|salesforce-setup\.com)$/;
+const SKIP_PATHS = /\/(aura|static|servlet|s\/sfsites)/i;
+
+const LOADING_PATTERN = /^loading/i;
+
+// --- Tab grouping by Salesforce environment ---
+const GROUP_COLORS = ['green', 'blue', 'purple', 'cyan', 'orange', 'yellow', 'pink', 'grey'];
+
+function classifyTab(url, orgName) {
+  let hostname;
+  try { hostname = new URL(url).hostname; } catch { return { env: null }; }
+  if (!SF_DOMAINS.test(hostname)) return { env: null };
+
+  if (hostname.startsWith(orgName + '--')) {
+    const sandboxName = hostname.split('.')[0].split('--')[1];
+    return { env: 'sandbox', sandboxName: sandboxName || 'sandbox' };
+  }
+  if (hostname.startsWith(orgName + '.')) {
+    return { env: 'production' };
+  }
+  return { env: null };
+}
+
+function getGroupColor(env, sandboxName) {
+  if (env === 'production') return 'red';
+  let hash = 0;
+  for (let i = 0; i < sandboxName.length; i++) {
+    hash = ((hash << 5) - hash + sandboxName.charCodeAt(i)) | 0;
+  }
+  return GROUP_COLORS[Math.abs(hash) % GROUP_COLORS.length];
+}
+
+async function findOrCreateGroup(tabId, title, color, windowId) {
+  if (!chrome.tabs.group || !chrome.tabGroups) {
+    console.warn('[TabGroup] chrome.tabs.group or chrome.tabGroups API not available');
+    return;
+  }
+
+  const existing = await chrome.tabGroups.query({ title, windowId });
+  if (existing.length > 0) {
+    console.log('[TabGroup] Adding tab', tabId, 'to existing group', title);
+    await chrome.tabs.group({ tabIds: [tabId], groupId: existing[0].id });
+  } else {
+    console.log('[TabGroup] Creating new group', title, color, 'for tab', tabId);
+    const groupId = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId } });
+    await chrome.tabGroups.update(groupId, { title, color });
+  }
+}
+
+async function assignTabToGroup(tab, orgName) {
+  const info = classifyTab(tab.url, orgName);
+  if (!info.env) return;
+
+  const title = info.env === 'production' ? 'PROD' : info.sandboxName.toUpperCase();
+  const color = getGroupColor(info.env, info.sandboxName);
+  await findOrCreateGroup(tab.id, title, color, tab.windowId);
+}
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (!tab.url) return;
+
+  let hostname;
+  try { hostname = new URL(tab.url).hostname; } catch { return; }
+  if (!SF_DOMAINS.test(hostname)) return;
+
+  // On title change, just update the title of an existing entry
+  if (changeInfo.title && !LOADING_PATTERN.test(changeInfo.title)) {
+    const data = await chrome.storage.local.get('recentPages');
+    const pages = data.recentPages || [];
+    const existing = pages.find(p => p.url === tab.url);
+    if (existing) {
+      existing.title = changeInfo.title;
+      await chrome.storage.local.set({ recentPages: pages });
+    }
+    return;
+  }
+
+  // On page load complete, add/move the entry to the top
+  if (changeInfo.status !== 'complete') return;
+
+  const path = new URL(tab.url).pathname;
+  if (SKIP_PATHS.test(path)) return;
+
+  const title = (tab.title && !LOADING_PATTERN.test(tab.title)) ? tab.title : tab.url;
+  const entry = { url: tab.url, title, timestamp: Date.now() };
+
+  const data = await chrome.storage.local.get('recentPages');
+  let pages = data.recentPages || [];
+
+  // Deduplicate: remove existing entry with same URL
+  pages = pages.filter(p => p.url !== entry.url);
+  // Add to front
+  pages.unshift(entry);
+  // Cap at 5
+  pages = pages.slice(0, 5);
+
+  await chrome.storage.local.set({ recentPages: pages });
+
+  // Auto-group tab by environment
+  const groupConfig = await chrome.storage.sync.get(['orgName', 'tabGroupingEnabled']);
+  if (groupConfig.tabGroupingEnabled && groupConfig.orgName) {
+    try { await assignTabToGroup(tab, groupConfig.orgName); }
+    catch (e) { /* tab may have closed */ }
+  }
+});
+
 chrome.omnibox.onInputEntered.addListener(async (text) => {
   const parts = text.trim().split(/\s+/);
   
@@ -119,4 +226,33 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     chrome.tabs.update(tab.id, { url });
   }
+});
+
+// --- Manual tab grouping command (Ctrl+Shift+G / Ctrl+Shift+G on Mac) ---
+chrome.commands.onCommand.addListener(async (command) => {
+  console.log('[TabGroup] Command received:', command);
+  if (command !== 'group-sf-tabs') return;
+
+  const data = await chrome.storage.sync.get(['orgName']);
+  if (!data.orgName) {
+    console.warn('[TabGroup] No orgName configured, skipping');
+    return;
+  }
+
+  const tabs = await chrome.tabs.query({});
+  console.log('[TabGroup] Processing', tabs.length, 'tabs for orgName:', data.orgName);
+  let grouped = 0;
+  for (const tab of tabs) {
+    if (!tab.url) continue;
+    try {
+      const info = classifyTab(tab.url, data.orgName);
+      if (info.env) {
+        await assignTabToGroup(tab, data.orgName);
+        grouped++;
+      }
+    } catch (e) {
+      console.error('[TabGroup] Error grouping tab', tab.id, tab.url, e);
+    }
+  }
+  console.log('[TabGroup] Grouped', grouped, 'tabs');
 });

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 360px;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f1019;
+      color: #d4d7e1;
+    }
+
+    .accent-bar {
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+      background-size: 200% 100%;
+    }
+
+    .container {
+      padding: 14px 16px 10px;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f0f1f5;
+      margin-bottom: 14px;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    h3::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 4px;
+      padding-bottom: 0;
+    }
+
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #555b75;
+      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn {
+      background: #181b28;
+      color: #b0b6c9;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      padding: 7px 13px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      background: #1f2338;
+      border-color: #3b82f6;
+      color: #e4e6ec;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.12);
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .env-btn {
+      background: transparent;
+      color: #6b7394;
+      border: 1px solid #252940;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .env-btn:hover {
+      background: #181b28;
+      color: #b0b6c9;
+      border-color: #363b54;
+    }
+    .env-btn.selected {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+      font-weight: 600;
+    }
+    .env-btn.selected:hover {
+      background: linear-gradient(135deg, #4f91ff, #3b82f6);
+      box-shadow: 0 2px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .open-mode-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .open-mode-row label {
+      font-size: 11px;
+      color: #555b75;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .open-mode-row select {
+      padding: 3px 8px;
+      border: 1px solid #252940;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: inherit;
+      background: #181b28;
+      color: #b0b6c9;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .open-mode-row select:hover {
+      border-color: #363b54;
+    }
+    .open-mode-row select option {
+      background: #181b28;
+      color: #b0b6c9;
+    }
+
+
+    .quick-nav-row {
+      display: flex;
+      gap: 6px;
+    }
+    .quick-nav-row input {
+      flex: 1;
+      padding: 8px 11px;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      background: #181b28;
+      color: #d4d7e1;
+      transition: all 0.15s ease;
+    }
+    .quick-nav-row input::placeholder {
+      color: #444b66;
+    }
+    .quick-nav-row input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .quick-nav-row .btn {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+    }
+    .quick-nav-row .btn:hover {
+      background: linear-gradient(135deg, #4f91ff, #3b82f6);
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    .recent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #9098b0;
+      transition: all 0.12s ease;
+      border-left: 2px solid transparent;
+    }
+    .recent-item:hover {
+      background: rgba(59, 130, 246, 0.06);
+      color: #d4d7e1;
+      border-left-color: #3b82f6;
+    }
+    .recent-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 10px;
+    }
+    .recent-time {
+      color: #444b66;
+      font-size: 10px;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .footer {
+      text-align: right;
+      padding-top: 6px;
+    }
+    .footer a {
+      font-size: 11px;
+      color: #555b75;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .footer a:hover {
+      color: #3b82f6;
+    }
+
+    .no-config {
+      text-align: center;
+      padding: 32px 20px;
+      color: #6b7394;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .no-config a {
+      color: #3b82f6;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .no-config a:hover {
+      text-decoration: underline;
+    }
+
+    /* Keyboard shortcut hint */
+    .kbd {
+      display: inline-block;
+      background: #181b28;
+      border: 1px solid #252940;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-family: inherit;
+      color: #555b75;
+      font-weight: 500;
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="accent-bar"></div>
+
+  <div id="no-config" class="no-config" style="display:none;">
+    No org configured yet.<br>
+    <a id="open-options-setup">Open Settings</a> to get started.
+  </div>
+
+  <div id="main" style="display:none;">
+    <div class="container">
+      <h3>SF Navigator</h3>
+
+      <div class="section">
+        <div class="section-label">Environment</div>
+        <div class="btn-row" id="env-buttons"></div>
+      </div>
+
+      <div class="section">
+        <div class="open-mode-row">
+          <label for="open-mode">Open in:</label>
+          <select id="open-mode">
+            <option value="current">Current Tab</option>
+            <option value="tab">New Tab</option>
+            <option value="window">New Window</option>
+          </select>
+        </div>
+        <div class="section-label">Navigate</div>
+        <div class="btn-row" id="builtin-buttons"></div>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="btn" id="login-btn">Login</button>
+          <button class="btn btn-copy" id="copy-btn">Copy</button>
+        </div>
+      </div>
+
+      <div class="section" id="custom-section" style="display:none;">
+        <div class="section-label">Custom</div>
+        <div class="btn-row" id="custom-buttons"></div>
+      </div>
+
+      <div class="section" id="recent-section" style="display:none;">
+        <div class="section-label">Recent Pages</div>
+        <div id="recent-list"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Quick Nav</div>
+        <div class="quick-nav-row">
+          <input type="text" id="quick-nav-input" list="std-objects" placeholder="ID, object name, or pick from list" autocomplete="off">
+          <button class="btn" id="quick-nav-go">Go</button>
+        </div>
+        <datalist id="std-objects">
+          <option value="Account">
+          <option value="Asset">
+          <option value="Campaign">
+          <option value="Case">
+          <option value="Contact">
+          <option value="Contract">
+          <option value="Dashboard">
+          <option value="Event">
+          <option value="Lead">
+          <option value="Opportunity">
+          <option value="Order">
+          <option value="Product">
+          <option value="Report">
+          <option value="Solution">
+          <option value="Task">
+          <option value="User">
+        </datalist>
+      </div>
+
+      <div class="footer">
+        <a id="open-options">Settings</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

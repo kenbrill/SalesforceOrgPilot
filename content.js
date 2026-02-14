@@ -63,7 +63,7 @@
       opacity: opacity,
       userSelect: 'none',
       lineHeight: '1',
-      textShadow: `0 0 10px ${color}, 0 0 30px ${color}`,
+      textShadow: 'none',
       animation: 'sfq-fadein 0.8s ease-out, sfq-pulse 4s ease-in-out 1s infinite'
     };
 
