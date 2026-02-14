@@ -101,6 +101,7 @@ Automatically organizes Salesforce tabs into color-coded browser tab groups by e
 |---|---|
 | **Alt+S** (Option+S on Mac) | Open the popup |
 | **Alt+Shift+G** (Option+Shift+G on Mac) | Group all Salesforce tabs by environment |
+| **Alt+Shift+T** (Option+Shift+T on Mac) | Pull all Salesforce tabs into current window and group |
 
 Remap shortcuts at `chrome://extensions/shortcuts`.
 

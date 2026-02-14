@@ -231,6 +231,65 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
 // --- Manual tab grouping command (Ctrl+Shift+G / Ctrl+Shift+G on Mac) ---
 chrome.commands.onCommand.addListener(async (command) => {
   console.log('[TabGroup] Command received:', command);
+
+  if (command === 'consolidate-sf-tabs') {
+    const data = await chrome.storage.sync.get(['orgName']);
+    if (!data.orgName) {
+      console.warn('[TabGroup] No orgName configured, skipping');
+      return;
+    }
+
+    const currentWindow = await chrome.windows.getCurrent();
+    const allTabs = await chrome.tabs.query({});
+    console.log('[Consolidate] Pulling SF tabs into window', currentWindow.id, 'from', allTabs.length, 'total tabs');
+
+    // Move SF tabs from other windows into the current window
+    let moved = 0;
+    for (const tab of allTabs) {
+      if (!tab.url || tab.windowId === currentWindow.id) continue;
+      const info = classifyTab(tab.url, data.orgName);
+      if (info.env) {
+        try {
+          await chrome.tabs.move(tab.id, { windowId: currentWindow.id, index: -1 });
+          moved++;
+        } catch (e) {
+          console.error('[Consolidate] Error moving tab', tab.id, e);
+        }
+      }
+    }
+    console.log('[Consolidate] Moved', moved, 'SF tabs into current window');
+
+    // Now group all tabs in the current window
+    const windowTabs = await chrome.tabs.query({ windowId: currentWindow.id });
+    let grouped = 0;
+    const nonSfTabIds = [];
+    for (const tab of windowTabs) {
+      if (!tab.url) continue;
+      try {
+        const info = classifyTab(tab.url, data.orgName);
+        if (info.env) {
+          await assignTabToGroup(tab, data.orgName);
+          grouped++;
+        } else {
+          nonSfTabIds.push(tab.id);
+        }
+      } catch (e) {
+        console.error('[Consolidate] Error grouping tab', tab.id, e);
+      }
+    }
+
+    // Move non-SF tabs to the beginning
+    if (nonSfTabIds.length > 0) {
+      try {
+        await chrome.tabs.move(nonSfTabIds, { index: 0 });
+      } catch (e) {
+        console.error('[Consolidate] Error moving non-SF tabs', e);
+      }
+    }
+    console.log('[Consolidate] Grouped', grouped, 'tabs');
+    return;
+  }
+
   if (command !== 'group-sf-tabs') return;
 
   const data = await chrome.storage.sync.get(['orgName']);
@@ -242,6 +301,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   const tabs = await chrome.tabs.query({});
   console.log('[TabGroup] Processing', tabs.length, 'tabs for orgName:', data.orgName);
   let grouped = 0;
+  const nonSfTabsByWindow = {};
   for (const tab of tabs) {
     if (!tab.url) continue;
     try {
@@ -249,9 +309,21 @@ chrome.commands.onCommand.addListener(async (command) => {
       if (info.env) {
         await assignTabToGroup(tab, data.orgName);
         grouped++;
+      } else {
+        if (!nonSfTabsByWindow[tab.windowId]) nonSfTabsByWindow[tab.windowId] = [];
+        nonSfTabsByWindow[tab.windowId].push(tab.id);
       }
     } catch (e) {
       console.error('[TabGroup] Error grouping tab', tab.id, tab.url, e);
+    }
+  }
+
+  // Move non-Salesforce tabs to the beginning of each window
+  for (const tabIds of Object.values(nonSfTabsByWindow)) {
+    try {
+      await chrome.tabs.move(tabIds, { index: 0 });
+    } catch (e) {
+      console.error('[TabGroup] Error moving non-SF tabs', e);
     }
   }
   console.log('[TabGroup] Grouped', grouped, 'tabs');
