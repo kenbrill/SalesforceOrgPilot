@@ -169,7 +169,10 @@ function showMessage(text, isSuccess) {
 
 // --- Keyboard shortcut ---
 document.getElementById('openShortcutsBtn').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+  const url = typeof browser !== 'undefined'
+    ? 'about:addons'
+    : 'chrome://extensions/shortcuts';
+  chrome.tabs.create({ url });
 });
 
 // --- Export / Import ---
