@@ -103,9 +103,13 @@ Automatically organizes Salesforce tabs into color-coded browser tab groups by e
 | **Alt+Shift+G** (Option+Shift+G on Mac) | Group all Salesforce tabs by environment |
 | **Alt+Shift+T** (Option+Shift+T on Mac) | Pull all Salesforce tabs into current window and group |
 
-Remap shortcuts at `chrome://extensions/shortcuts`.
+Remap shortcuts at:
+- **Chrome**: `chrome://extensions/shortcuts`
+- **Firefox**: `about:addons` → Extensions → Salesforce OrgPilot → Manage
 
 ## Installation
+
+This extension works in **Chrome** and **Firefox 139+** (requires tab grouping API support).
 
 ### Chrome
 1. Clone or download this repository
@@ -120,6 +124,8 @@ Remap shortcuts at `chrome://extensions/shortcuts`.
 3. Click **Load Temporary Add-on**
 4. Select the `manifest.json` file from this directory
 5. Open the extension's **Options** page to configure your production URL
+
+**Note:** Firefox 139+ is required for full tab grouping functionality. Earlier versions will have all features except automatic tab grouping.
 
 ## Configuration
 
