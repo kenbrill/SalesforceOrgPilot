@@ -58,18 +58,25 @@
   }
   renderEnvButtons();
 
-  // --- URL builder (always lowercases env for the URL) ---
+  // --- URL builders ---
   function buildBaseUrl(env) {
     if (env === 'prod') {
       return `https://${orgName}.my.salesforce.com`;
+    }
+    return `https://${orgName}--${env.toLowerCase()}.sandbox.my.salesforce.com`;
+  }
+
+  function buildSetupUrl(env) {
+    if (env === 'prod') {
+      return `https://${orgName}.my.salesforce-setup.com`;
     }
     return `https://${orgName}--${env.toLowerCase()}.sandbox.my.salesforce-setup.com`;
   }
 
   // --- Built-in targets ---
   const builtinTargets = [
-    { name: 'Admin', path: '/lightning/setup/SetupOneHome/home' },
-    { name: 'Flows', path: '/lightning/setup/Flows/home' },
+    { name: 'Admin', path: '/lightning/setup/SetupOneHome/home', setup: true },
+    { name: 'Flows', path: '/lightning/setup/Flows/home', setup: true },
     { name: 'Sandbox', special: 'sandbox' },
     { name: 'DevOps', special: 'devops' }
   ];
@@ -145,24 +152,27 @@
       url = `https://${orgName}.lightning.force.com/sf_devops/DevOpsCenter.app`;
     } else if (target.path === null) {
       url = buildBaseUrl(selectedEnv);
+    } else if (target.setup) {
+      url = buildSetupUrl(selectedEnv) + target.path;
     } else {
       url = buildBaseUrl(selectedEnv) + target.path;
     }
     navigate(url);
   }
 
-  function navigate(url) {
+  async function navigate(url) {
     const mode = document.getElementById('open-mode').value;
     if (mode === 'window') {
-      chrome.windows.create({ url });
+      await chrome.windows.create({ url });
     } else if (mode === 'tab') {
-      chrome.tabs.create({ url });
+      await chrome.tabs.create({ url });
     } else {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.tabs.update(tabs[0].id, { url });
-        }
-      });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]) {
+        await chrome.tabs.update(tabs[0].id, { url });
+      } else {
+        await chrome.tabs.create({ url });
+      }
     }
     window.close();
   }

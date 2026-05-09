@@ -131,7 +131,7 @@ This extension works in **Chrome** and **Firefox 139+** (requires tab grouping A
 
 Open the extension options page to set:
 
-1. **Production URL** — Your Salesforce production domain (e.g., `myorg.lightning.force.com`). The org name is extracted from the first segment of this URL and used for environment detection and navigation.
+1. **Production URL** — Your Salesforce production domain (e.g., `myorg.lightning.force.com` or `myorg.develop.lightning.force.com`). The org prefix is extracted by stripping the standard Salesforce domain suffix, so multi-segment org names (like Developer Edition orgs with `.develop`) are handled correctly.
 2. **Sandbox Names** — Comma-separated list of sandbox environment names (e.g., `DEV, QA, UAT`). These appear as buttons in the popup dashboard.
 3. **Tab Grouping** — Toggle auto-grouping of Salesforce tabs by environment. Off by default.
 4. **Watermark settings** — Toggle, font size, opacity, colors, and position.

@@ -1,3 +1,20 @@
+function extractOrgName(input) {
+  let host = input.replace(/^https?:\/\//, '').split('/')[0];
+  const tails = [
+    '.sandbox.my.salesforce-setup.com',
+    '.sandbox.my.salesforce.com',
+    '.lightning.force.com',
+    '.my.salesforce-setup.com',
+    '.my.salesforce.com',
+    '.salesforce.com',
+    '.force.com',
+  ];
+  for (const tail of tails) {
+    if (host.endsWith(tail)) return host.slice(0, -tail.length);
+  }
+  return host.split('.')[0];
+}
+
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const prodUrl = document.getElementById('prodUrl').value.trim();
 
@@ -6,8 +23,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     return;
   }
 
-  // Extract the organization name from the URL
-  const orgName = prodUrl.split('.')[0];
+  const orgName = extractOrgName(prodUrl);
 
   // Collect custom targets
   const customTargets = [];
@@ -230,7 +246,7 @@ document.getElementById('scanHistoryBtn').addEventListener('click', async () => 
     return;
   }
 
-  const orgName = prodUrl.split('.')[0];
+  const orgName = extractOrgName(prodUrl);
   const prefix = orgName + '--';
 
   // Search history for Salesforce domains
