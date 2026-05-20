@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Salesforce Quick Navigator",
-  "version": "1.57",
+  "version": "1.58",
   "commands": {
     "_execute_action": {
       "suggested_key": {

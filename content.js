@@ -7,12 +7,22 @@
     'opacity',
     'prodColor',
     'sandboxColor',
-    'position'
+    'position',
+    'urlBlacklist'
   ]);
 
   if (!config.watermarkEnabled || !config.prodUrl) return;
 
-  const hostname = window.location.hostname;
+  const currentHost = window.location.hostname.toLowerCase();
+  const blacklist = config.urlBlacklist || [];
+  const isBlacklisted = blacklist.some(entry => {
+    if (!entry) return false;
+    if (entry.startsWith('*.')) return currentHost.endsWith(entry.slice(1));
+    return currentHost === entry || currentHost.endsWith('.' + entry);
+  });
+  if (isBlacklisted) return;
+
+  const hostname = currentHost;
   const orgName = config.orgName || config.prodUrl.split('.')[0];
 
   // Production hostnames start with "orgname." (e.g. sangoma.lightning.force.com,

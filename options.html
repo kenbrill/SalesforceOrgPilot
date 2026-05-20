@@ -104,6 +104,28 @@
       line-height: 1.5;
     }
 
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0f1019;
+      border: 1px solid #252940;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #d4d7e1;
+      transition: all 0.15s ease;
+      resize: vertical;
+      min-height: 72px;
+    }
+    textarea::placeholder {
+      color: #6b7394;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
     input[type="text"],
     select {
       width: 100%;
@@ -503,6 +525,12 @@
           <option value="top-center">Top Center</option>
           <option value="center">Center</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label for="urlBlacklist">URL Blacklist</label>
+        <textarea id="urlBlacklist" placeholder="trailhead.salesforce.com&#10;help.salesforce.com"></textarea>
+        <small>Hostnames to exclude from the watermark, one per line. Use <code style="font-family:inherit;color:#60a5fa">*.example.com</code> for wildcard subdomains.</small>
       </div>
     </div>
 

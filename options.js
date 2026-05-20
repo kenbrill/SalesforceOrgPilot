@@ -59,6 +59,11 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     .map(s => s.trim())
     .filter(s => s.length > 0);
 
+  const urlBlacklist = document.getElementById('urlBlacklist').value
+    .split('\n')
+    .map(s => s.trim().toLowerCase())
+    .filter(s => s.length > 0);
+
   const config = {
     prodUrl,
     orgName,
@@ -70,7 +75,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     position: document.getElementById('position').value,
     customTargets,
     sandboxNames,
-    tabGroupingEnabled: document.getElementById('tabGroupingEnabled').checked
+    tabGroupingEnabled: document.getElementById('tabGroupingEnabled').checked,
+    urlBlacklist
   };
 
   await chrome.storage.sync.set(config);
@@ -133,7 +139,8 @@ async function loadConfig() {
     'position',
     'customTargets',
     'sandboxNames',
-    'tabGroupingEnabled'
+    'tabGroupingEnabled',
+    'urlBlacklist'
   ]);
 
   if (data.prodUrl) {
@@ -171,6 +178,9 @@ async function loadConfig() {
     for (const target of data.customTargets) {
       addTargetRow(target.name, target.path);
     }
+  }
+  if (data.urlBlacklist && data.urlBlacklist.length) {
+    document.getElementById('urlBlacklist').value = data.urlBlacklist.join('\n');
   }
 }
 
