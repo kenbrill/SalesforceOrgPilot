@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -384,6 +385,12 @@
       border: 1px solid rgba(34, 197, 94, 0.15);
       display: block;
     }
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      display: block;
+    }
 
     /* Keyboard shortcut display */
     .kbd {
@@ -419,6 +426,20 @@
     </div>
 
     <div class="section">
+      <h2>Setup</h2>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;">
+          <input type="radio" name="setupMode" value="prod" checked>
+          <span>Production org (with optional sandboxes)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="radio" name="setupMode" value="standalone">
+          <span>Standalone orgs only (Trailhead Playgrounds / Developer Editions)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section" id="prodSection">
       <h2>Production URL</h2>
       <div class="form-group">
         <label for="prodUrl">Salesforce Org Domain</label>
@@ -431,7 +452,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" id="sandboxSection">
       <h2>Sandbox Names</h2>
       <div class="form-group">
         <label for="sandboxNames">Sandbox Environments</label>
@@ -444,6 +465,15 @@
         <button type="button" id="scanHistoryBtn" class="btn-sm" style="margin-top: 8px;">Scan Browser History</button>
         <div id="scanMessage" class="message"></div>
       </div>
+    </div>
+
+    <div class="section">
+      <h2>Named Orgs <span class="badge">Trailhead / DE</span></h2>
+      <small style="margin-bottom: 12px;">Standalone orgs that aren't sandboxes of your production org (Trailhead Playgrounds, Developer Editions). Give each a short alias and its domain prefix (everything before <code style="font-family:inherit;color:#60a5fa">.lightning.force.com</code> / <code style="font-family:inherit;color:#60a5fa">.my.salesforce.com</code>). Aliases appear as environments in the popup and work as <code style="font-family:inherit;color:#60a5fa">sf &lt;alias&gt; &lt;target&gt;</code> in the address bar.</small>
+      <div id="namedOrgs"></div>
+      <button type="button" id="addNamedOrgBtn" class="btn-sm btn-add">+ Add Org</button>
+      <button type="button" id="scanNamedOrgsBtn" class="btn-sm btn-add" style="margin-left: 8px;">Scan Browser History</button>
+      <div id="scanNamedMessage" class="message"></div>
     </div>
 
     <div class="section">

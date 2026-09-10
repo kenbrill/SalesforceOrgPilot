@@ -7,13 +7,26 @@ const LOADING_PATTERN = /^loading/i;
 // --- Tab grouping by Salesforce environment ---
 const GROUP_COLORS = ['green', 'blue', 'purple', 'cyan', 'orange', 'yellow', 'pink', 'grey'];
 
-function classifyTab(url, orgName) {
+function classifyTab(url, orgName, namedOrgs) {
   let hostname;
   try { hostname = new URL(url).hostname; } catch { return { env: null }; }
   if (!SF_DOMAINS.test(hostname)) return { env: null };
 
+  // Named orgs (e.g. Trailhead Playgrounds / DE orgs with their own random domains)
+  // are checked first so they can't be misread as prod/sandbox of another org.
+  for (const org of namedOrgs || []) {
+    if (org.name && org.domain && hostname.startsWith(org.domain + '.')) {
+      return { env: 'named', sandboxName: org.name };
+    }
+  }
+
+  // orgName is optional (Trailhead Playground / DE-only users only have named orgs)
+  if (!orgName) return { env: null };
+
   if (hostname.startsWith(orgName + '--')) {
-    const sandboxName = hostname.split('.')[0].split('--')[1];
+    // Sandbox: name sits between "--" and the next "." - use the full org prefix
+    // so dotted org names (e.g. "myorg.develop") are handled like popup.js does
+    const sandboxName = hostname.slice(orgName.length + 2).split('.')[0];
     return { env: 'sandbox', sandboxName: sandboxName || 'sandbox' };
   }
   if (hostname.startsWith(orgName + '.')) {
@@ -48,8 +61,8 @@ async function findOrCreateGroup(tabId, title, color, windowId) {
   }
 }
 
-async function assignTabToGroup(tab, orgName) {
-  const info = classifyTab(tab.url, orgName);
+async function assignTabToGroup(tab, orgName, namedOrgs) {
+  const info = classifyTab(tab.url, orgName, namedOrgs);
   if (!info.env) return;
 
   const title = info.env === 'production' ? 'PROD' : info.sandboxName.toUpperCase();
@@ -97,16 +110,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
   await chrome.storage.local.set({ recentPages: pages });
 
-  // Auto-group tab by environment
-  const groupConfig = await chrome.storage.sync.get(['orgName', 'tabGroupingEnabled']);
-  if (groupConfig.tabGroupingEnabled && groupConfig.orgName) {
-    try { await assignTabToGroup(tab, groupConfig.orgName); }
+  // Auto-group tab by environment (orgName optional: named orgs alone are enough)
+  const groupConfig = await chrome.storage.sync.get(['orgName', 'tabGroupingEnabled', 'namedOrgs']);
+  if (groupConfig.tabGroupingEnabled && (groupConfig.orgName || (groupConfig.namedOrgs || []).length)) {
+    try { await assignTabToGroup(tab, groupConfig.orgName, groupConfig.namedOrgs); }
     catch (e) { /* tab may have closed */ }
   }
 });
 
-if (chrome.omnibox) {
-  chrome.omnibox.onInputEntered.addListener(async (text) => {
+async function handleOmniboxInput(text) {
     const parts = text.trim().split(/\s+/);
 
     // If a single word is provided, assume production
@@ -121,26 +133,41 @@ if (chrome.omnibox) {
     const secondParam = parts[1];
     const secondParamLower = secondParam.toLowerCase();
 
-    // Get stored configuration
-    const data = await chrome.storage.sync.get(['prodUrl', 'orgName', 'customTargets']);
+    // Get stored configuration (orgName optional: named orgs alone are enough)
+    const data = await chrome.storage.sync.get(['prodUrl', 'orgName', 'customTargets', 'namedOrgs']);
 
-    if (!data.orgName) {
+    if (!data.orgName && !(data.namedOrgs || []).length) {
       chrome.tabs.create({
-        url: chrome.runtime.getURL('popup.html'),
+        url: chrome.runtime.getURL('options.html'),
         active: true
       });
       return;
     }
 
     const orgName = data.orgName;
+    const namedOrg = (data.namedOrgs || []).find(o => o.name && o.domain && o.name.toLowerCase() === firstParam);
 
-    let baseUrl;
-
-    if (firstParam === 'prod') {
-      baseUrl = `https://${orgName}.my.salesforce.com`;
+    // Base URLs - same scheme as buildBaseUrl/buildSetupUrl in popup.js:
+    //   app pages (login, records, object lists, custom targets) -> <env>.my.salesforce.com
+    //   setup pages (admin, flows)                               -> <env>.my.salesforce-setup.com
+    // Env segment: org name for prod, "org--sbx.sandbox" for sandboxes, or the full
+    // random domain prefix for a named org (Trailhead Playground / DE standalone orgs).
+    // Environment segment: named org domain, org name for prod, or "org--sbx.sandbox".
+    // Without an orgName (Trailhead Playground / DE-only setups), a 'prod' target
+    // falls back to the first named org - same default the popup uses.
+    let envSegment;
+    if (namedOrg) {
+      envSegment = namedOrg.domain;
+    } else if (orgName) {
+      envSegment = firstParam === 'prod' ? orgName : `${orgName}--${firstParam}.sandbox`;
+    } else if (firstParam === 'prod') {
+      envSegment = data.namedOrgs.find(o => o.name && o.domain).domain;
     } else {
-      baseUrl = `https://${orgName}--${firstParam}.sandbox.my.salesforce-setup.com`;
+      console.warn('[SFNav] Sandbox target requires a production URL');
+      return;
     }
+    const baseUrl = `https://${envSegment}.my.salesforce.com`;
+    const setupBaseUrl = `https://${envSegment}.my.salesforce-setup.com`;
 
     let url;
 
@@ -158,36 +185,42 @@ if (chrome.omnibox) {
       const currentUrl = new URL(tab.url);
       const currentHost = currentUrl.hostname;
 
-      // Strip org prefix to get the domain tail (e.g. "my.salesforce-setup.com")
-      let tail;
-      if (currentHost.startsWith(orgName + '--')) {
-        // Sandbox: strip "orgName--sbxName." then strip "sandbox."
-        tail = currentHost.replace(/^[^.]+\./, '');
-        if (tail.startsWith('sandbox.')) tail = tail.slice('sandbox.'.length);
-      } else if (currentHost.startsWith(orgName + '.')) {
-        // Prod: strip "orgName."
-        tail = currentHost.replace(/^[^.]+\./, '');
-      } else {
-        return;
-      }
+      // Strip the longest known prefix (incl. its separator) to get the domain tail
+      // (e.g. "my.salesforce-setup.com" or "lightning.force.com")
+      const namedPrefixes = (data.namedOrgs || [])
+        .filter(o => o.name && o.domain)
+        .map(o => o.domain + '.')
+        .sort((a, b) => b.length - a.length);
 
-      // Build new hostname for target environment
-      let newHost;
-      if (firstParam === 'prod') {
-        newHost = `${orgName}.${tail}`;
-      } else {
-        newHost = `${orgName}--${firstParam}.sandbox.${tail}`;
+      let tail = null;
+      for (const prefix of [...namedPrefixes, ...(orgName ? [orgName + '.'] : [])]) {
+        if (currentHost.startsWith(prefix)) {
+          tail = currentHost.slice(prefix.length);
+          break;
+        }
       }
+      if (tail === null && orgName && currentHost.startsWith(orgName + '--')) {
+        // Sandbox: strip "orgName--<sbx>." then the "sandbox." label below
+        tail = currentHost.slice(orgName.length + 2).replace(/^[^.]+\./, '');
+      }
+      // Unknown Salesforce org: fall back to dropping just the first label
+      if (tail === null) {
+        if (!SF_DOMAINS.test(currentHost)) return;
+        tail = currentHost.replace(/^[^.]+\./, '');
+      }
+      if (tail.startsWith('sandbox.')) tail = tail.slice('sandbox.'.length);
 
-      url = `https://${newHost}${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+      // Build new hostname for target environment (envSegment already encodes
+      // named-org / prod / sandbox, incl. the no-orgName prod fallback)
+      url = `https://${envSegment}.${tail}${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
     }
     // Check if sandbox (always goes to prod)
     else if (secondParamLower === 'sandbox') {
-      url = `https://${orgName}.my.salesforce-setup.com/lightning/setup/DataManagementCreateTestInstance/home`;
+      url = `https://${envSegment}.my.salesforce-setup.com/lightning/setup/DataManagementCreateTestInstance/home`;
     }
     // Check if devops (only available in prod)
     else if (secondParamLower === 'devops') {
-      url = `https://${orgName}.lightning.force.com/sf_devops/DevOpsCenter.app`;
+      url = `https://${envSegment}.lightning.force.com/sf_devops/DevOpsCenter.app`;
     }
     // Check if login
     else if (secondParamLower === 'login') {
@@ -195,11 +228,11 @@ if (chrome.omnibox) {
     }
     // Check if admin
     else if (secondParamLower === 'admin') {
-      url = `${baseUrl}/lightning/setup/SetupOneHome/home`;
+      url = `${setupBaseUrl}/lightning/setup/SetupOneHome/home`;
     }
     // Check if flow
     else if (secondParamLower.substring(0, 4) === 'flow') {
-      url = `${baseUrl}/lightning/setup/Flows/home`;
+      url = `${setupBaseUrl}/lightning/setup/Flows/home`;
     }
     // Check custom targets (flexible plural matching: "site" matches "sites" and vice versa)
     else if (customMatch) {
@@ -227,17 +260,23 @@ if (chrome.omnibox) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       chrome.tabs.update(tab.id, { url });
     }
-  });
 }
+
+if (chrome.omnibox) {
+  chrome.omnibox.onInputEntered.addListener(handleOmniboxInput);
+}
+
+// Exposed for automated verification
+globalThis.__sfqn = { classifyTab, handleOmniboxInput };
 
 // --- Manual tab grouping command (Ctrl+Shift+G / Ctrl+Shift+G on Mac) ---
 chrome.commands.onCommand.addListener(async (command) => {
   console.log('[TabGroup] Command received:', command);
 
   if (command === 'consolidate-sf-tabs') {
-    const data = await chrome.storage.sync.get(['orgName']);
-    if (!data.orgName) {
-      console.warn('[TabGroup] No orgName configured, skipping');
+    const data = await chrome.storage.sync.get(['orgName', 'namedOrgs']);
+    if (!data.orgName && !(data.namedOrgs || []).length) {
+      console.warn('[TabGroup] No orgName or namedOrgs configured, skipping');
       return;
     }
 
@@ -249,7 +288,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     let moved = 0;
     for (const tab of allTabs) {
       if (!tab.url || tab.windowId === currentWindow.id) continue;
-      const info = classifyTab(tab.url, data.orgName);
+      const info = classifyTab(tab.url, data.orgName, data.namedOrgs);
       if (info.env) {
         try {
           await chrome.tabs.move(tab.id, { windowId: currentWindow.id, index: -1 });
@@ -268,9 +307,9 @@ chrome.commands.onCommand.addListener(async (command) => {
     for (const tab of windowTabs) {
       if (!tab.url) continue;
       try {
-        const info = classifyTab(tab.url, data.orgName);
+        const info = classifyTab(tab.url, data.orgName, data.namedOrgs);
         if (info.env) {
-          await assignTabToGroup(tab, data.orgName);
+          await assignTabToGroup(tab, data.orgName, data.namedOrgs);
           grouped++;
         } else {
           nonSfTabIds.push(tab.id);
@@ -294,9 +333,9 @@ chrome.commands.onCommand.addListener(async (command) => {
 
   if (command !== 'group-sf-tabs') return;
 
-  const data = await chrome.storage.sync.get(['orgName']);
-  if (!data.orgName) {
-    console.warn('[TabGroup] No orgName configured, skipping');
+  const data = await chrome.storage.sync.get(['orgName', 'namedOrgs']);
+  if (!data.orgName && !(data.namedOrgs || []).length) {
+    console.warn('[TabGroup] No orgName or namedOrgs configured, skipping');
     return;
   }
 
@@ -307,9 +346,9 @@ chrome.commands.onCommand.addListener(async (command) => {
   for (const tab of tabs) {
     if (!tab.url) continue;
     try {
-      const info = classifyTab(tab.url, data.orgName);
+      const info = classifyTab(tab.url, data.orgName, data.namedOrgs);
       if (info.env) {
-        await assignTabToGroup(tab, data.orgName);
+        await assignTabToGroup(tab, data.orgName, data.namedOrgs);
         grouped++;
       } else {
         if (!nonSfTabsByWindow[tab.windowId]) nonSfTabsByWindow[tab.windowId] = [];

@@ -2,11 +2,15 @@
 
 A browser extension (Manifest V3) for Chrome and Firefox that provides environment identification watermarks and quick navigation for Salesforce orgs.
 
+It supports two org topologies:
+- **Paid org with sandboxes** — predictable domains (`myorg.lightning.force.com`, `myorg--dev.sandbox.my.salesforce.com`)
+- **Standalone orgs** (Trailhead Playgrounds, Developer Editions) — unpredictable random domains (`mindful-unicorn-ghtysl-dev-ed.trailblaze.lightning.force.com`), handled via **Named Orgs**
+
 ## Features
 
 ### Environment Watermark
 
-Automatically displays a watermark identifying whether you're in **Production** or a **Sandbox** (showing the sandbox name). The watermark appears on page load so you can verify your environment at a glance, then disappears on your first click or keypress to stay out of the way. It reappears on the next page load.
+Automatically displays a watermark identifying whether you're in **Production**, a **Sandbox** (showing the sandbox name), or a **Named Org** (showing its alias). The watermark appears on page load so you can verify your environment at a glance, then disappears on your first click or keypress to stay out of the way. It reappears on the next page load.
 
 Customizable via the options page:
 
@@ -20,7 +24,7 @@ Customizable via the options page:
 
 ### Omnibox Quick Navigation
 
-Type **`sf`** in the browser address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox name to target a sandbox.
+Type **`sf`** in the browser address bar followed by a target to quickly navigate anywhere in your Salesforce org. Single-word commands default to production; prefix with a sandbox or named-org alias to target another org.
 
 ```
 sf <target>                    # goes to production (current tab)
@@ -31,7 +35,8 @@ sf **<sandbox> <target>        # opens in a new window
 
 **Environments:**
 - Single word defaults to **production** (e.g., `sf cases` → prod cases)
-- Two words: first word is the sandbox name (e.g., `sf dev cases` → dev sandbox cases)
+- Two words: first word is the sandbox name (e.g., `sf dev cases` → dev sandbox cases) or a **Named Org alias** (e.g., `sf moose cases` → your Moose playground)
+- `sf moose copy` / `sf copy` work to and from named orgs too
 
 **Tab/Window behavior:**
 - No prefix — navigates in the **current tab** (default)
@@ -69,13 +74,16 @@ sf *prod admin           → Production Setup Home in a new tab
 sf **dev cases           → Dev sandbox cases in a new window
 sf users                 → Custom target "users" in production
 sf dev users             → Custom target "users" in dev sandbox
+sf moose admin           → Moose playground Setup Home (named org)
+sf moose copy            → Open current page in the Moose playground
+sf copy                  → Open current page in production (works from named orgs too)
 ```
 
 ### Popup Dashboard
 
 Click the extension icon to open a quick-access popup with:
 
-- **Environment selector** — Switch between Production and your configured sandboxes with one click. The selected environment is remembered across popup opens.
+- **Environment selector** — Switch between Production, your configured sandboxes, and your Named Orgs with one click. The selected environment is remembered across popup opens.
 - **Navigate buttons** — Admin, Flows, Sandbox, DevOps on the first row; Login and Copy on the second. Copy takes the current tab's page and opens it in the selected environment.
 - **Custom targets** — Any custom targets you've configured appear in their own section.
 - **Recent Pages** — Shows the last 5 Salesforce pages you visited, with relative timestamps ("just now", "5m ago", "2h ago"). Click any entry to navigate back. Respects the open-in dropdown.
@@ -122,7 +130,7 @@ This extension works in **Chrome** and **Firefox 139+** (requires tab grouping A
 1. Clone or download this repository
 2. Open `about:debugging#/runtime/this-firefox` in Firefox
 3. Click **Load Temporary Add-on**
-4. Select the `manifest.json` file from this directory
+4. Select the `manifest-firefox.json` file from this directory (Chrome's `manifest.json` must stay free of Firefox-only keys like `background.scripts`, which Chrome rejects)
 5. Open the extension's **Options** page to configure your production URL
 
 **Note:** Firefox 139+ is required for full tab grouping functionality. Earlier versions will have all features except automatic tab grouping.
@@ -131,11 +139,13 @@ This extension works in **Chrome** and **Firefox 139+** (requires tab grouping A
 
 Open the extension options page to set:
 
-1. **Production URL** — Your Salesforce production domain (e.g., `myorg.lightning.force.com` or `myorg.develop.lightning.force.com`). The org prefix is extracted by stripping the standard Salesforce domain suffix, so multi-segment org names (like Developer Edition orgs with `.develop`) are handled correctly.
-2. **Sandbox Names** — Comma-separated list of sandbox environment names (e.g., `DEV, QA, UAT`). These appear as buttons in the popup dashboard.
-3. **Tab Grouping** — Toggle auto-grouping of Salesforce tabs by environment. Off by default.
-4. **Watermark settings** — Toggle, font size, opacity, colors, and position.
-5. **Custom Targets** — Up to 10 custom name/URL pairs. Paste a full Salesforce URL and the path is extracted automatically. Target names support flexible plural matching (`site` matches `sites` and vice versa).
+1. **Setup mode** — Pick **Production org** if you have one, or **Standalone orgs only** (Trailhead Playgrounds / Developer Editions); prod-only sections are hidden in standalone mode.
+2. **Production URL** (prod setups) — Your Salesforce production domain (e.g., `myorg.lightning.force.com` or `myorg.develop.lightning.force.com`). The org prefix is extracted by stripping the standard Salesforce domain suffix, so multi-segment org names (like Developer Edition orgs with `.develop`) are handled correctly.
+3. **Sandbox Names** (prod setups) — Comma-separated list of sandbox environment names (e.g., `DEV, QA, UAT`). These appear as buttons in the popup dashboard. Sandbox creation requires paid licenses, so Trailhead Playgrounds and Developer Edition orgs can't appear here — use Named Orgs instead.
+4. **Named Orgs** — Alias + domain-prefix pairs for standalone orgs (Trailhead Playgrounds, Developer Editions) whose domains are random rather than derived from your prod org. Example: alias `moose` → domain `brave-moose-1234-dev-ed.trailblaze`. Aliases appear as environment buttons in the popup, work as omnibox environments (`sf moose admin`), get their own watermark label and tab group, and support Copy in both directions. A history scan fills in candidate domains automatically — just add aliases.
+5. **Tab Grouping** — Toggle auto-grouping of Salesforce tabs by environment. Off by default.
+6. **Watermark settings** — Toggle, font size, opacity, colors, and position.
+7. **Custom Targets** — Up to 10 custom name/URL pairs. Paste a full Salesforce URL and the path is extracted automatically. Target names support flexible plural matching (`site` matches `sites` and vice versa).
 
 All settings sync across browser instances via `chrome.storage.sync`.
 
@@ -147,6 +157,7 @@ From the options page, you can **Export** your entire configuration as a `sfnav-
 
 The extension determines the environment from the page hostname:
 
+- **Named Orgs** — Hostname starts with a configured org domain (e.g., `mindful-unicorn-ghtysl-dev-ed.trailblaze.lightning.force.com`); the alias is displayed as the watermark label
 - **Production** — Hostname starts with `orgName.` (e.g., `myorg.lightning.force.com`)
 - **Sandbox** — Hostname contains `orgName--` (e.g., `myorg--dev.sandbox.lightning.force.com`), with the sandbox name extracted and displayed as the watermark label
 
@@ -175,3 +186,27 @@ No build tools required — vanilla JS, HTML, and CSS loaded directly by the bro
 After making changes:
 - **Chrome**: Go to `chrome://extensions/` and click the reload button on the extension card
 - **Firefox**: Go to `about:debugging#/runtime/this-firefox` and click **Reload**
+
+## Changelog
+
+### 1.62
+
+- **Added a Setup mode: production org vs standalone orgs** — the options page now asks up front whether you have a production org (prod URL + optional sandboxes) or only standalone orgs (Trailhead Playgrounds / Developer Editions). Standalone mode hides the prod-only sections, and every prod-URL requirement was removed: the Named Orgs history scan runs without one, the popup shows named-org environments instead of the setup screen, the watermark and tab grouping work from named orgs alone, and the omnibox resolves `prod` to your first named org (Sandbox/DevOps commands and buttons are treated as prod-only).
+- **Fixed manual tab grouping ignoring Named Orgs** — Alt+Shift+G (group) and Alt+Shift+T (consolidate) classified tabs without passing the named-orgs config, so playground/DE tabs were never grouped. Auto-grouping on page load was unaffected.
+
+### 1.61
+
+- **Fixed Named Orgs domains being truncated on save** — `collectNamedOrgs` cut domain prefixes at the first dot, silently corrupting Trailhead/DE orgs like `brave-moose-1234-dev-ed.trailblaze` into `brave-moose-1234-dev-ed` (which broke navigation, watermark, grouping, and Copy). Full prefixes are now preserved; pasting a full URL or hostname still works.
+- **Fixed invisible error messages in the options page** — failure messages (scan found nothing, missing production URL, invalid target, etc.) were rendered with `display: none` and could never be seen. They now show in red; the zero-result scan message also explains that orgs appear only after you've visited them in this browser.
+
+### 1.60
+
+- **Fixed extension failing to load in Chrome** — the manifest contained the Firefox-only `background.scripts` key, which Chrome rejects in Manifest V3 (`'background.scripts' requires manifest version of 2 or lower`). Chrome's `manifest.json` now uses `service_worker` only; Firefox users load `manifest-firefox.json` instead.
+- **Fixed Copy producing broken URLs from named orgs** — copying a page from a standalone org (e.g. `org.trailblaze.lightning.force.com`) generated an invalid double-dot hostname. Prefix stripping now includes the separator, in both the popup and the omnibox.
+- **Fixed sandbox name extraction for multi-segment org names** — for org prefixes containing a dot (e.g. `myorg.develop`), the watermark showed `SANDBOX` instead of the actual sandbox name. Detection now matches the popup's logic.
+- **Fixed Named Orgs history scan finding nothing** — the scan discarded org prefixes containing a dot, which filtered out every Trailhead Playground / Developer Edition domain. It now keeps full prefixes like `brave-moose-1234-dev-ed.trailblaze`, skips the configured org, sandbox-style hosts, and shared Salesforce properties (`trailhead`, `org62`, `developer`, ...).
+- **Fixed manifest charset warnings** — added `<meta charset="utf-8">` to the popup and options pages and removed non-ASCII characters from extension files, eliminating `odd character 'â€”'` warnings on load.
+
+### 1.59
+
+- **Added Named Orgs** — support for standalone orgs whose domains aren't derived from a paid production org (Trailhead Playgrounds, Developer Editions). Configure alias + domain pairs in the options page (with a browser-history scanner to discover candidates); aliases work as environments in the popup, omnibox (`sf <alias> <target>`), Copy, watermark labels, and tab groups.

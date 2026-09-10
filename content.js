@@ -2,6 +2,7 @@
   const config = await chrome.storage.sync.get([
     'prodUrl',
     'orgName',
+    'namedOrgs',
     'watermarkEnabled',
     'fontSize',
     'opacity',
@@ -11,7 +12,10 @@
     'urlBlacklist'
   ]);
 
-  if (!config.watermarkEnabled || !config.prodUrl) return;
+  // Watermark needs either a production org (orgName) or at least one named org;
+  // Trailhead Playground / DE-only users only configure Named Orgs.
+  const hasNamedOrgs = (config.namedOrgs || []).some(o => o.name && o.domain);
+  if (!config.watermarkEnabled || (!config.prodUrl && !hasNamedOrgs)) return;
 
   const currentHost = window.location.hostname.toLowerCase();
   const blacklist = config.urlBlacklist || [];
@@ -23,20 +27,30 @@
   if (isBlacklisted) return;
 
   const hostname = currentHost;
-  const orgName = config.orgName || config.prodUrl.split('.')[0];
+  const orgName = config.orgName || (config.prodUrl ? config.prodUrl.split('.')[0] : '');
 
   // Production hostnames start with "orgname." (e.g. sangoma.lightning.force.com,
   // sangoma.my.salesforce-setup.com). Sandbox hostnames contain "--"
-  // (e.g. sangoma--dev.sandbox.lightning.force.com, sangoma--dev.my.salesforce-setup.com).
-  const isProduction = hostname.startsWith(orgName + '.') && !hostname.startsWith(orgName + '--');
+  // (e.g. sangoma--dev.sandbox.lightning.force.com). Named orgs (Trailhead
+  // Playgrounds / DE orgs) have their own random domains configured in options
+  // (e.g. mindful-unicorn-ghtysl-dev-ed.trailblaze.lightning.force.com).
+  const namedOrg = (config.namedOrgs || []).find(o =>
+    o.name && o.domain && hostname.startsWith(o.domain + '.'));
+  const isProduction = !namedOrg &&
+    hostname.startsWith(orgName + '.') && !hostname.startsWith(orgName + '--');
 
-  // Extract sandbox name from hostname (e.g. "sangoma--dive.sandbox..." → "dive")
+  // Label: named org alias (e.g. "MOOSE"), else sandbox name, else PRODUCTION
   let label = 'PRODUCTION';
-  if (!isProduction) {
-    const prefix = hostname.split('.')[0];
-    const sandboxName = prefix.split('--')[1];
+  if (namedOrg) {
+    label = namedOrg.name.toUpperCase();
+  } else if (!isProduction) {
+    // Sandbox label: name between "--" and the next ".", using the full org prefix
+    const sandboxName = hostname.startsWith(orgName + '--')
+      ? hostname.slice(orgName.length + 2).split('.')[0]
+      : null;
     label = sandboxName ? sandboxName.toUpperCase() : 'SANDBOX';
   }
+  // Named orgs share the sandbox color (decided in design: "like sandboxes")
   const color = isProduction
     ? (config.prodColor || '#ff4444')
     : (config.sandboxColor || '#006600');

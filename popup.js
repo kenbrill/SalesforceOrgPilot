@@ -1,8 +1,13 @@
 (async function () {
-  const data = await chrome.storage.sync.get(['orgName', 'sandboxNames', 'customTargets']);
+  const data = await chrome.storage.sync.get(['orgName', 'sandboxNames', 'customTargets', 'namedOrgs']);
   const orgName = data.orgName;
+  // namedOrgs: [{ name: alias, domain: random-domain-prefix }] for standalone orgs
+  // (Trailhead Playgrounds / Developer Edition) that aren't sandboxes of prod.
+  const namedOrgs = (data.namedOrgs || []).filter(o => o.name && o.domain);
 
-  if (!orgName) {
+  // Production URL is optional: Trailhead Playground / DE-only users just configure
+  // Named Orgs. Only show the setup screen when nothing is configured at all.
+  if (!orgName && namedOrgs.length === 0) {
     document.getElementById('no-config').style.display = 'block';
     document.getElementById('open-options-setup').addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
@@ -17,29 +22,34 @@
   // sandboxNames are stored with original casing (e.g. "DEV", "QA")
   const sandboxNames = data.sandboxNames || [];
   const envContainer = document.getElementById('env-buttons');
-  const envList = ['prod', ...sandboxNames];
+  // Without a production org there is no PROD button - named orgs are the environments
+  const envList = [...(orgName ? ['prod'] : []), ...sandboxNames, ...namedOrgs.map(o => o.name)];
 
   // Detect environment from the current tab's URL
-  let selectedEnv = 'prod';
+  let selectedEnv = orgName ? 'prod' : (namedOrgs[0] && namedOrgs[0].name);
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (activeTab && activeTab.url) {
     try {
       const hostname = new URL(activeTab.url).hostname;
-      if (hostname.startsWith(orgName + '--')) {
+      // Named org: hostname starts with that org's random domain prefix
+      const namedMatch = namedOrgs.find(o => hostname.startsWith(o.domain + '.'));
+      if (namedMatch) {
+        selectedEnv = namedMatch.name;
+      } else if (orgName && hostname.startsWith(orgName + '--')) {
         // Sandbox: extract name between "--" and "."
         const sbxName = hostname.slice(orgName.length + 2).split('.')[0];
         // Match against configured sandbox names (case-insensitive)
         const match = sandboxNames.find(s => s.toLowerCase() === sbxName);
         if (match) selectedEnv = match;
       }
-      // If hostname starts with orgName. it's production — selectedEnv stays 'prod'
+      // If hostname starts with orgName. it's production - selectedEnv stays 'prod'
     } catch { /* not a valid URL, keep default */ }
   }
   // Fall back to last manually selected env if not on a Salesforce page
-  if (selectedEnv === 'prod' && activeTab && activeTab.url && !/salesforce|force\.com/.test(activeTab.url)) {
+  if (activeTab && activeTab.url && !/salesforce|force\.com/.test(activeTab.url)) {
     const local = await chrome.storage.local.get('selectedEnv');
-    selectedEnv = local.selectedEnv || 'prod';
-    if (!envList.includes(selectedEnv)) selectedEnv = 'prod';
+    selectedEnv = local.selectedEnv || selectedEnv;
+    if (!envList.includes(selectedEnv)) selectedEnv = envList[0];
   }
 
   function renderEnvButtons() {
@@ -59,26 +69,33 @@
   renderEnvButtons();
 
   // --- URL builders ---
+  // Resolve an env selection to its domain prefix: prod = org name, sandbox =
+  // "org--name.sandbox", named org = its own random domain prefix.
+  function envSegment(env) {
+    const named = namedOrgs.find(o => o.name.toLowerCase() === String(env).toLowerCase());
+    if (named) return named.domain;
+    if (env === 'prod') return orgName;
+    return `${orgName}--${env.toLowerCase()}.sandbox`;
+  }
+
   function buildBaseUrl(env) {
-    if (env === 'prod') {
-      return `https://${orgName}.my.salesforce.com`;
-    }
-    return `https://${orgName}--${env.toLowerCase()}.sandbox.my.salesforce.com`;
+    return `https://${envSegment(env)}.my.salesforce.com`;
   }
 
   function buildSetupUrl(env) {
-    if (env === 'prod') {
-      return `https://${orgName}.my.salesforce-setup.com`;
-    }
-    return `https://${orgName}--${env.toLowerCase()}.sandbox.my.salesforce-setup.com`;
+    return `https://${envSegment(env)}.my.salesforce-setup.com`;
   }
 
   // --- Built-in targets ---
+  // Sandbox creation and DevOps Center are production-org features: hide them
+  // when no production org is configured (Trailhead Playground / DE-only users).
   const builtinTargets = [
     { name: 'Admin', path: '/lightning/setup/SetupOneHome/home', setup: true },
     { name: 'Flows', path: '/lightning/setup/Flows/home', setup: true },
-    { name: 'Sandbox', special: 'sandbox' },
-    { name: 'DevOps', special: 'devops' }
+    ...(orgName ? [
+      { name: 'Sandbox', special: 'sandbox' },
+      { name: 'DevOps', special: 'devops' }
+    ] : [])
   ];
 
   const builtinContainer = document.getElementById('builtin-buttons');
@@ -103,26 +120,27 @@
     const currentUrl = new URL(tab.url);
     const currentHost = currentUrl.hostname;
 
-    // Strip org prefix to get the domain tail
-    let tail;
-    if (currentHost.startsWith(orgName + '--')) {
-      tail = currentHost.replace(/^[^.]+\./, '');
-      if (tail.startsWith('sandbox.')) tail = tail.slice('sandbox.'.length);
-    } else if (currentHost.startsWith(orgName + '.')) {
-      tail = currentHost.replace(/^[^.]+\./, '');
-    } else {
-      return;
-    }
+    // Strip the longest known prefix (incl. its separator) to get the domain tail
+    // (e.g. "my.salesforce-setup.com" or "lightning.force.com")
+    const namedPrefixes = namedOrgs
+      .map(o => o.domain + '.')
+      .sort((a, b) => b.length - a.length);
 
-    const envLower = selectedEnv === 'prod' ? 'prod' : selectedEnv.toLowerCase();
-    let newHost;
-    if (envLower === 'prod') {
-      newHost = `${orgName}.${tail}`;
-    } else {
-      newHost = `${orgName}--${envLower}.sandbox.${tail}`;
+    let tail = null;
+    for (const prefix of [...namedPrefixes, ...(orgName ? [orgName + '.'] : [])]) {
+      if (currentHost.startsWith(prefix)) {
+        tail = currentHost.slice(prefix.length);
+        break;
+      }
     }
+    if (tail === null && orgName && currentHost.startsWith(orgName + '--')) {
+      // Sandbox: strip "orgName--<sbx>." then the "sandbox." label below
+      tail = currentHost.slice(orgName.length + 2).replace(/^[^.]+\./, '');
+    }
+    if (tail === null) return; // unknown org - can't map domains
+    if (tail.startsWith('sandbox.')) tail = tail.slice('sandbox.'.length);
 
-    const url = `https://${newHost}${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+    const url = `https://${envSegment(selectedEnv)}.${tail}${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
     navigate(url);
   });
 
